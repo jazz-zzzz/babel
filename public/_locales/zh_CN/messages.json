@@ -1,0 +1,32 @@
+{
+    "app_name":  {
+                     "message":  "Babel"
+                 },
+    "app_description":  {
+                            "message":  "私人定制的多语言翻译插件。支持 YouTube 字幕增强。"
+                        },
+    "translate_selection":  {
+                                "message":  "翻译 \"%s\""
+                            },
+    "toggle_translate":  {
+                             "message":  "开启翻译"
+                         },
+    "toggle_translate_only":  {
+                                  "message":  "仅显示译文"
+                              },
+    "toggle_style":  {
+                         "message":  "切换样式"
+                     },
+    "open_options":  {
+                         "message":  "打开设置"
+                     },
+    "open_tranbox":  {
+                         "message":  "打开弹窗"
+                     },
+    "open_separate_window":  {
+                                 "message":  "打开独立窗口"
+                             },
+    "toggle_tranbox":  {
+                           "message":  "切换划词翻译"
+                       }
+}

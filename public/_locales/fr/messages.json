@@ -1,0 +1,32 @@
+{
+    "app_name":  {
+                     "message":  "Babel"
+                 },
+    "app_description":  {
+                            "message":  "Extension de traduction bilingue. Amélioration des sous-titres YouTube."
+                        },
+    "translate_selection":  {
+                                "message":  "Traduire \"%s\""
+                            },
+    "toggle_translate":  {
+                             "message":  "Activer/désactiver la traduction"
+                         },
+    "toggle_translate_only":  {
+                                  "message":  "Afficher uniquement la traduction"
+                              },
+    "toggle_style":  {
+                         "message":  "Changer de style"
+                     },
+    "open_options":  {
+                         "message":  "Ouvrir les paramètres"
+                     },
+    "open_tranbox":  {
+                         "message":  "Ouvrir la fenêtre contextuelle"
+                     },
+    "open_separate_window":  {
+                                 "message":  "Ouvrir dans une fenêtre indépendante"
+                             },
+    "toggle_tranbox":  {
+                           "message":  "Basculer la boîte de traduction"
+                       }
+}

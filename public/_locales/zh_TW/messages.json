@@ -1,0 +1,32 @@
+{
+    "app_name":  {
+                     "message":  "Babel"
+                 },
+    "app_description":  {
+                            "message":  "私人訂製的多語言翻譯外掛。支援 YouTube 字幕增強。"
+                        },
+    "translate_selection":  {
+                                "message":  "翻譯 \"%s\""
+                            },
+    "toggle_translate":  {
+                             "message":  "開啟翻譯"
+                         },
+    "toggle_translate_only":  {
+                                  "message":  "僅顯示譯文"
+                              },
+    "toggle_style":  {
+                         "message":  "切換樣式"
+                     },
+    "open_options":  {
+                         "message":  "開啟設定"
+                     },
+    "open_tranbox":  {
+                         "message":  "開啟彈出視窗"
+                     },
+    "open_separate_window":  {
+                                 "message":  "打開獨立視窗"
+                             },
+    "toggle_tranbox":  {
+                           "message":  "切換劃詞翻譯"
+                       }
+}
