@@ -1,5 +1,7 @@
 import {
   buildBatchSubtitleSystemPrompt,
+  buildBatchSubtitleUserPrompt,
+  buildStrictChunkSubtitleSystemPrompt,
   countFilledTranslations,
   createBatchSubtitleApiSetting,
   getMissingSubtitleTranslationIndexes,
@@ -281,6 +283,44 @@ describe("subtitle batch API prompt settings", () => {
     expect(setting.contextChatHistory).toBe(false);
     expect(setting.useContext).toBe(false);
     expect(setting.useStream).toBe(false);
+  });
+
+  test("strict chunk prompt hard-separates readonly context from translatable segments", () => {
+    const prompt = buildStrictChunkSubtitleSystemPrompt({
+      count: 2,
+      toLang: "zh-CN",
+    });
+
+    expect(prompt).toContain("Translate ONLY payload.segmentsToTranslate");
+    expect(prompt).toContain("readonlyContext is reference-only");
+    expect(prompt).toContain(
+      "Never move meaning, words, clauses, or sentence continuations across ids"
+    );
+  });
+
+  test("batch user prompt isolates context as readonly text blocks", () => {
+    const prompt = buildBatchSubtitleUserPrompt({
+      useBatchFetch: true,
+      toLang: "zh-CN",
+      texts: ["current zero", "current one"],
+      contextBefore: [
+        { globalIndex: 10, text: "before zero" },
+        { globalIndex: 11, text: "before one" },
+      ],
+      contextAfter: [{ globalIndex: 14, text: "after zero" }],
+      docInfo: { title: "Video title", description: "Video description" },
+    });
+    const parsed = JSON.parse(prompt);
+
+    expect(parsed.segments).toBeUndefined();
+    expect(parsed.contextBefore).toBeUndefined();
+    expect(parsed.contextAfter).toBeUndefined();
+    expect(parsed.payload.segmentsToTranslate).toEqual([
+      { id: 0, source: "current zero" },
+      { id: 1, source: "current one" },
+    ]);
+    expect(parsed.readonlyContext.beforeText).toBe("before zero\nbefore one");
+    expect(parsed.readonlyContext.afterText).toBe("after zero");
   });
 });
 

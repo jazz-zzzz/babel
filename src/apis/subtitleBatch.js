@@ -195,23 +195,69 @@ TRANSLATION QUALITY:
 - Use consistent terminology, character names, tone, and style throughout.
 - Translate naturally into ${toLang}. Preserve proper nouns and technical terms as-is.`;
 
-export const buildStrictChunkSubtitleSystemPrompt = ({ count, toLang }) => `Translate ONLY the ${count} objects in "segments" into ${toLang}. Use title, description, contextBefore, and contextAfter only for context.
 
-CRITICAL: Return ONLY a valid compact JSON object with exactly this shape:
+const joinReadonlyContextText = (items = []) =>
+  items
+    .map((item) => String(item?.text || "").trim())
+    .filter(Boolean)
+    .join("\n");
+
+export const buildBatchSubtitleUserPrompt = ({
+  toLang,
+  texts = [],
+  contextBefore = [],
+  contextAfter = [],
+  docInfo: { title = "", description = "" } = {},
+}) => {
+  const promptObj = {
+    task: {
+      targetLanguage: toLang,
+      translateOnly: "payload.segmentsToTranslate",
+      outputIds: texts.map((_, id) => id),
+    },
+    payload: {
+      segmentsToTranslate: texts.map((text, id) => ({ id, source: text })),
+    },
+  };
+
+  const beforeText = joinReadonlyContextText(contextBefore);
+  const afterText = joinReadonlyContextText(contextAfter);
+  if (beforeText || afterText) {
+    promptObj.readonlyContext = {};
+    if (beforeText) promptObj.readonlyContext.beforeText = beforeText;
+    if (afterText) promptObj.readonlyContext.afterText = afterText;
+  }
+
+  if (title) promptObj.title = title;
+  if (description) promptObj.description = description;
+
+  return JSON.stringify(promptObj);
+};
+
+export const buildStrictChunkSubtitleSystemPrompt = ({ count, toLang }) => `You are a subtitle translation engine. Translate ONLY payload.segmentsToTranslate into ${toLang}. readonlyContext is reference-only and is NOT part of the translation task.
+
+INPUT CONTRACT:
+- payload.segmentsToTranslate is the only array whose objects require translation.
+- readonlyContext.beforeText and readonlyContext.afterText are read-only reference text. They may help resolve terminology, pronouns, tone, and incomplete sentence fragments.
+- Never create output for readonlyContext. Never translate readonlyContext as items. Never copy, merge, summarize, continue, or complete readonlyContext into any item.
+
+OUTPUT CONTRACT:
+Return ONLY one valid compact JSON object with exactly this shape:
 {"items":[{"id":0,"text":"translated text"}]}
 
 STRICT RULES:
 - The "items" array MUST contain exactly ${count} objects.
-- Each "id" MUST exactly match an input "segments" id.
-- Do NOT output contextBefore/contextAfter globalIndex values.
-- Do NOT reorder, skip, merge, split, or invent ids.
+- Each output "id" MUST exactly match one input id from payload.segmentsToTranslate.
+- For each output item, translate only the "source" text from the segment with the same id.
+- Never move meaning, words, clauses, or sentence continuations across ids, even when adjacent context forms a larger sentence.
+- Do NOT reorder, skip, merge, split, invent, or duplicate ids.
 - Every "text" MUST be a non-empty translated string.
 - No markdown, no explanations, no extra top-level keys.
 
 TRANSLATION QUALITY:
 - Translate naturally into ${toLang}.
 - Preserve proper nouns and technical terms as-is when appropriate.
-- Use nearby context only to resolve pronouns, sentence fragments, terminology, and tone.`;
+- Prefer faithful id-by-id alignment over smoothing across subtitle boundaries.`;
 
 export const createBatchSubtitleApiSetting = ({
   apiSetting,

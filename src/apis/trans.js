@@ -70,7 +70,10 @@ import { fetchData, fetchStream } from "../libs/fetch";
 import { getMsgHistory } from "./history";
 import { parseBilingualVtt } from "../subtitle/vtt";
 import { getDocInfo } from "../libs/docInfo";
-import { parseStrictSubtitleChunkResult } from "./subtitleBatch";
+import {
+  buildBatchSubtitleUserPrompt,
+  parseStrictSubtitleChunkResult,
+} from "./subtitleBatch";
 
 const keyMap = new Map();
 const urlMap = new Map();
@@ -123,6 +126,7 @@ const genSystemPrompt = ({
 const genUserPrompt = ({
   nobatchUserPrompt,
   useBatchFetch,
+  strictBatchFetch = false,
   tone,
   glossary = {}, // 规则中的AI专业术语
   aiTerms = "", // 接口中的AI专业术语
@@ -136,22 +140,33 @@ const genUserPrompt = ({
   docInfo: { title = "", description = "", summary = "" } = {},
 }) => {
   if (useBatchFetch) {
-    const promptObj = {
-      targetLanguage: toLang,
-      segments: texts.map((text, i) => ({ id: i, text })),
-    };
+    const promptObj = strictBatchFetch
+      ? JSON.parse(
+          buildBatchSubtitleUserPrompt({
+            toLang,
+            texts,
+            contextBefore,
+            contextAfter,
+            docInfo: { title, description },
+          })
+        )
+      : {
+          targetLanguage: toLang,
+          segments: texts.map((text, i) => ({ id: i, text })),
+        };
 
-    if (contextBefore.length) {
-      promptObj.contextBefore = contextBefore;
+    if (!strictBatchFetch) {
+      if (contextBefore.length) {
+        promptObj.contextBefore = contextBefore;
+      }
+      if (contextAfter.length) {
+        promptObj.contextAfter = contextAfter;
+      }
+      title && (promptObj.title = title);
+      description && (promptObj.description = description);
     }
-    if (contextAfter.length) {
-      promptObj.contextAfter = contextAfter;
-    }
 
-    title && (promptObj.title = title);
-    description && (promptObj.description = description);
-
-    // 合并规则与接口中的AI专业术语
+    // Merge glossary terms from settings and API options.
     if (aiTerms) {
       const aiGlossary = parseAITerms(aiTerms);
       glossary = { ...glossary, ...aiGlossary };
@@ -159,7 +174,6 @@ const genUserPrompt = ({
 
     Object.keys(glossary).length !== 0 && (promptObj.glossary = glossary);
     tone && (promptObj.tone = tone);
-
     return JSON.stringify(promptObj);
   }
 
@@ -1105,6 +1119,7 @@ export const genTransReq = async ({ reqHook, ...args }) => {
     nobatchPrompt = defaultNobatchPrompt,
     nobatchUserPrompt = defaultNobatchUserPrompt,
     useBatchFetch,
+    strictBatchFetch,
     from,
     to,
     fromLang,
@@ -1206,6 +1221,7 @@ export const genTransReq = async ({ reqHook, ...args }) => {
       : genUserPrompt({
           nobatchUserPrompt,
           useBatchFetch,
+          strictBatchFetch,
           from,
           to,
           fromLang,
