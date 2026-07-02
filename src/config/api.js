@@ -773,6 +773,7 @@ const defaultApiOpts = {
     streamRenderMode: "segment",
     thinkingMode: "disabled",
     batchInterval: 50,
+    fetchLimit: 30,
     fetchInterval: 10,
     rootMargin: 2000,
   },
@@ -879,6 +880,7 @@ const DEEPSEEK_FAST_SPEED_DEFAULTS = {
   streamRenderMode: "segment",
   thinkingMode: "disabled",
   batchInterval: 50,
+  fetchLimit: 30,
   fetchInterval: 10,
   rootMargin: 2000,
 };

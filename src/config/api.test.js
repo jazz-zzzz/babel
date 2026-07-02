@@ -16,6 +16,7 @@ describe("DeepSeek speed defaults", () => {
       streamRenderMode: "segment",
       thinkingMode: "disabled",
       batchInterval: 50,
+      fetchLimit: 30,
       fetchInterval: 10,
       rootMargin: 2000,
     });
@@ -52,6 +53,7 @@ describe("DeepSeek speed defaults", () => {
       streamRenderMode: "segment",
       thinkingMode: "disabled",
       batchInterval: 50,
+      fetchLimit: 30,
       fetchInterval: 10,
       rootMargin: 2000,
     });

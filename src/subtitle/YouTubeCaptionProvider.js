@@ -34,6 +34,25 @@ const YT_CAPTION_SELECT = "#ytp-caption-window-container";
 const YT_AD_SELECT = ".video-ads";
 const YT_SUBTITLE_BTN_SELECT = "button.ytp-subtitles-button";
 
+export const extractOriginalSubtitleEventsFromTimedtextResponse = ({
+  url,
+  responseText,
+}) => {
+  try {
+    const timedtextUrl = new URL(url);
+    if (timedtextUrl.searchParams.get("tlang")) return null;
+    if (!timedtextUrl.searchParams.get("lang")) return null;
+    if (/chat/i.test(timedtextUrl.searchParams.get("name") || "")) return null;
+
+    const json = JSON.parse(responseText);
+    return Array.isArray(json?.events) && json.events.length
+      ? json.events
+      : null;
+  } catch (err) {
+    return null;
+  }
+};
+
 class YouTubeCaptionProvider {
   #setting = {};
 
@@ -289,13 +308,8 @@ class YouTubeCaptionProvider {
    * @private
    */
   #getMenuProps() {
-    const {
-      transApis,
-      skipAd,
-      isBilingual,
-      blurTranslation,
-      showOrigin,
-    } = this.#setting;
+    const { transApis, skipAd, isBilingual, blurTranslation, showOrigin } =
+      this.#setting;
     return {
       i18n: this.#i18n,
       updateSetting: this.updateSetting.bind(this),
@@ -586,26 +600,28 @@ class YouTubeCaptionProvider {
       this.#showNotification(this.#i18n("starting_to_process_subtitle"));
 
       const { toLang } = this.#setting;
-      const { captionTracks } = await this.#getCaptionTracks(videoId);
-      if (this.#isStaleProcessing(processingVersion)) return;
-      const captionTrack = this.#findCaptionTrack(
-        captionTracks,
-        lang,
-        interceptedKind
-      );
-      if (!captionTrack) {
-        logger.debug("Youtube Provider: CaptionTrack not found:", videoId);
-        return;
+      let events = extractOriginalSubtitleEventsFromTimedtextResponse({
+        url,
+        responseText,
+      });
+      if (!events) {
+        const { captionTracks } = await this.#getCaptionTracks(videoId);
+        if (this.#isStaleProcessing(processingVersion)) return;
+        const captionTrack = this.#findCaptionTrack(
+          captionTracks,
+          lang,
+          interceptedKind
+        );
+        if (!captionTrack) {
+          logger.debug("Youtube Provider: CaptionTrack not found:", videoId);
+          return;
+        }
+        if (!captionTrack.baseUrl.startsWith("https")) {
+          captionTrack.baseUrl = window.location.origin + captionTrack.baseUrl;
+        }
+        const capUrl = new URL(captionTrack.baseUrl);
+        events = await this.#getSubtitleEvents(capUrl, potUrl, responseText);
       }
-      if (!captionTrack.baseUrl.startsWith("https")) {
-        captionTrack.baseUrl = window.location.origin + captionTrack.baseUrl;
-      }
-      const capUrl = new URL(captionTrack.baseUrl);
-      const events = await this.#getSubtitleEvents(
-        capUrl,
-        potUrl,
-        responseText
-      );
       if (this.#isStaleProcessing(processingVersion)) return;
 
       if (!events?.length) {
@@ -831,7 +847,9 @@ class YouTubeCaptionProvider {
 
           if (this.#isStaleProcessing(processingVersion)) return false;
 
-          if (countFilledTranslations(chunkTranslations) === chunk.texts.length) {
+          if (
+            countFilledTranslations(chunkTranslations) === chunk.texts.length
+          ) {
             applyChunkTranslations(chunk, chunkTranslations);
             logger.info(
               `Youtube Provider: Chunk translated ${chunk.start}-${chunk.end} (${chunk.texts.length})`

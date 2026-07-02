@@ -188,12 +188,17 @@ export async function run(isUserscript = false) {
       setting.mouseHoverSetting.useMouseHover = false;
     }
 
-    // 7. 匹配当前网页专用的规则 (三级规则合并：个人 > 订阅 > 内置全局)
+    // 7. 顶层 frame 尽早启动视频字幕拦截，避免错过 YouTube 首批 timedtext 请求
+    if (!isIframe) {
+      runSubtitle({ href, setting, isUserscript });
+    }
+
+    // 8. 匹配当前网页专用的规则 (三级规则合并：个人 > 订阅 > 内置全局)
     const rule = await matchRule(href, setting);
     const favWords = await getFavWords(rule);
     const fabConfig = await getFabWithDefault();
 
-    // 8. 创建翻译调度器管理器并启动
+    // 9. 创建翻译调度器管理器并启动
     const translatorManager = new TranslatorManager({
       setting,
       rule,
@@ -204,15 +209,7 @@ export async function run(isUserscript = false) {
     });
     translatorManager.start();
 
-    // 9. 若当前页面是嵌套的 iframe，不进行视频字幕翻译，避免多个 iframe 里重复跑字幕服务造成冲突
-    if (isIframe) {
-      return;
-    }
-
-    // 10. 启动视频字幕翻译子模块 (仅在顶级 frame 下运行)
-    runSubtitle({ href, setting, rule, isUserscript });
-
-    // 11. 在油猴环境下，每次进入顶级页面时尝试触发一次订阅规则的自动同步检查 (每日一次)
+    // 10. 在油猴环境下，每次进入顶级页面时尝试触发一次订阅规则的自动同步检查 (每日一次)
     if (isUserscript) {
       trySyncAllSubRules(setting);
     }

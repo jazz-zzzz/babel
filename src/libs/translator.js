@@ -1480,7 +1480,12 @@ export class Translator {
 
       // 2. 发起真实的翻译网络请求
       const { trText: translatedText, isSame: isSameLang } =
-        await this.#translateFetch(processedString, deLang, onStreamChunk);
+        await this.#translateFetch(
+          processedString,
+          deLang,
+          onStreamChunk,
+          this.#getNodePriority(hostNode)
+        );
 
       // 请求完成后，立刻注销多余的 RAF 定时监听器，防止内存泄漏
       if (rafId) {
@@ -1786,7 +1791,18 @@ export class Translator {
   }
 
   // 发起翻译请求
-  #translateFetch(text, deLang = "", onStreamChunk = null) {
+  #getNodePriority(node) {
+    const rect = node?.getBoundingClientRect?.();
+    if (!rect) return 0;
+
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight || 0;
+    const isInViewport = rect.bottom >= 0 && rect.top <= viewportHeight;
+
+    return isInViewport ? 10 : 0;
+  }
+
+  #translateFetch(text, deLang = "", onStreamChunk = null, priority = 0) {
     const { toLang, transStartHook } = this.#rule;
     const fromLang = deLang || this.#rule.fromLang;
     const apiSetting = { ...this.#apiSetting };
@@ -1800,6 +1816,7 @@ export class Translator {
       apiSetting,
       glossary,
       onStreamChunk,
+      priority,
     };
 
     // 翻译开始钩子函数（允许用户在翻译请求发送前修改文本、语言或词典配置）

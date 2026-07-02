@@ -262,14 +262,18 @@ const parseAIRes = (raw, useBatchFetch = true) => {
     return [[raw]];
   }
 
-  babelLog("INFO", `[BATCH_PARSE] parseAIRes called, raw length: ${raw.length}`);
+  babelLog(
+    "INFO",
+    `[BATCH_PARSE] parseAIRes called, raw length: ${raw.length}`
+  );
 
   // 剥离 Markdown 常用的 ```json...``` 代码块包裹
   let content = stripMarkdownCodeBlock(raw).trim();
 
   // 1. 按约定格式 ["id":N,"text":"..."] 逐对象提取，不依赖 JSON.parse
   //    每个对象独立匹配——一个坏了不影响其他，且 id 直接索引无需排序
-  const OBJ_RE = /\{\s*"id"\s*:\s*(\d+)\s*,\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+  const OBJ_RE =
+    /\{\s*"id"\s*:\s*(\d+)\s*,\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
   const indexed = [];
   let match;
   while ((match = OBJ_RE.exec(content)) !== null) {
@@ -305,7 +309,8 @@ const parseAIRes = (raw, useBatchFetch = true) => {
         parsed = JSON.parse(jsonStr);
       } catch (e1) {
         // LLM 回复常见 JSON 笔误修复
-        const e1Pos = parseInt((e1.message.match(/position (\d+)/) || [])[1]) || 0;
+        const e1Pos =
+          parseInt((e1.message.match(/position (\d+)/) || [])[1]) || 0;
         let fixed = jsonStr
           .replace(/"id:(\d+)/g, '"id":$1')
           .replace(/,(\s*[}\]])/g, "$1");
@@ -313,15 +318,17 @@ const parseAIRes = (raw, useBatchFetch = true) => {
         if (e1Pos > 0 && jsonStr[e1Pos] === '"') {
           const before = jsonStr.slice(0, e1Pos);
           // 在 JSON 字符串值内部（偶数个反斜杠之后）的引号需要转义
-          const escCount = (before.match(/(^|[^\\])(\\\\)*$/)?.[0]?.match(/\\/g)?.length ?? 0);
+          const escCount =
+            before.match(/(^|[^\\])(\\\\)*$/)?.[0]?.match(/\\/g)?.length ?? 0;
           if (escCount % 2 === 0) {
-            fixed = jsonStr.slice(0, e1Pos) + '\\' + jsonStr.slice(e1Pos);
+            fixed = jsonStr.slice(0, e1Pos) + "\\" + jsonStr.slice(e1Pos);
           }
         }
         try {
           parsed = JSON.parse(fixed);
         } catch (e2) {
-          const e2Pos = parseInt((e2.message.match(/position (\d+)/) || [])[1]) || 0;
+          const e2Pos =
+            parseInt((e2.message.match(/position (\d+)/) || [])[1]) || 0;
           babelLog(
             "WARN",
             `parseAIRes JSON parse failed pos=${e2Pos}: ${fixed.slice(Math.max(0, e2Pos - 80), e2Pos + 80)}`
@@ -342,9 +349,7 @@ const parseAIRes = (raw, useBatchFetch = true) => {
         (item) => item && typeof item.text === "string"
       );
       if (valid.length > 0) {
-        const hasId = valid.some(
-          (item) => typeof item.id === "number"
-        );
+        const hasId = valid.some((item) => typeof item.id === "number");
         if (hasId) {
           const indexed = [];
           for (const item of valid) {
@@ -1524,6 +1529,7 @@ export async function* handleTranslate(
     contextBefore,
     contextAfter,
     signal,
+    poolKey,
   }
 ) {
   if (signal?.aborted) return;
@@ -1586,6 +1592,7 @@ export async function* handleTranslate(
       fetchInterval,
       fetchLimit,
       httpTimeout,
+      poolKey,
       streamRenderMode: apiSetting.streamRenderMode || "disabled",
     });
   } else {
@@ -1618,6 +1625,7 @@ export async function* handleTranslate(
       usePool,
       fetchInterval,
       fetchLimit,
+      poolKey,
       httpTimeout,
     });
     if (!response) {
@@ -1677,6 +1685,7 @@ async function* handleTranslateStreamInternal(
     usePool,
     fetchInterval,
     fetchLimit,
+    poolKey,
     httpTimeout,
     streamRenderMode,
   }
@@ -1697,6 +1706,7 @@ async function* handleTranslateStreamInternal(
       usePool,
       fetchInterval,
       fetchLimit,
+      poolKey,
       httpTimeout,
     })) {
       try {

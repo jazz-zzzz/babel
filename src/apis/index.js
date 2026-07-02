@@ -506,6 +506,7 @@ const apiBuiltinAITranslate = async ({ text, from, to, apiSetting }) => {
  * @param {Object} params.apiSetting 翻译接口的配置参数项
  * @param {string} params.glossary 自定义词汇术语替换表
  * @param {Function} params.onStreamChunk 流式响应增量回调函数 (用于 SSE/LLM 翻译)
+ * @param {number} params.priority 批处理队列优先级，数值越大越先处理
  * @param {Object} params.docInfo 视频/文档摘要等额外上下文环境数据
  * @param {boolean} params.useCache 是否应用本地请求缓存 (默认 true)
  * @param {boolean} params.usePool 是否应用限制连接池 (默认 true)
@@ -519,6 +520,7 @@ export const apiTranslate = async ({
   apiSetting = DEFAULT_API_SETTING,
   glossary,
   onStreamChunk,
+  priority,
   docInfo,
   useCache = true,
   usePool = true,
@@ -598,6 +600,7 @@ export const apiTranslate = async ({
       apiSetting,
       usePool,
       onStreamChunk,
+      priority,
       docInfo,
       signal,
     });
@@ -774,6 +777,7 @@ export const apiBatchSubtitleTranslate = async ({
     glossary: {},
     apiSetting: enhancedApiSetting,
     usePool: true,
+    poolKey: "subtitle",
     docInfo,
     contextBefore,
     contextAfter,

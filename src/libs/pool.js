@@ -155,10 +155,12 @@ class TaskPool {
   }
 }
 
+const DEFAULT_FETCH_POOL_KEY = "default";
+
 /**
- * 全局共享的请求池实例
+ * 按用途隔离的请求池实例。
  */
-let fetchPool;
+const fetchPools = new Map();
 
 /**
  * 获取请求池实例（单例模式）
@@ -166,14 +168,21 @@ let fetchPool;
  * @param {number} [limit] - 最大并发数
  * @returns {TaskPool}
  */
-export const getFetchPool = (interval, limit) => {
+export const getFetchPool = (
+  interval,
+  limit,
+  poolKey = DEFAULT_FETCH_POOL_KEY
+) => {
+  const key = poolKey || DEFAULT_FETCH_POOL_KEY;
+  let fetchPool = fetchPools.get(key);
   if (!fetchPool) {
     fetchPool = new TaskPool(
       interval ?? DEFAULT_FETCH_INTERVAL,
       limit ?? DEFAULT_FETCH_LIMIT
     );
+    fetchPools.set(key, fetchPool);
   } else if (interval && limit) {
-    updateFetchPool(interval, limit);
+    updateFetchPool(interval, limit, key);
   }
   return fetchPool;
 };
@@ -183,13 +192,19 @@ export const getFetchPool = (interval, limit) => {
  * @param {number} interval - 最小间隔（毫秒）
  * @param {number} limit - 并发限制数
  */
-export const updateFetchPool = (interval, limit) => {
-  fetchPool?.update(interval, limit);
+export const updateFetchPool = (
+  interval,
+  limit,
+  poolKey = DEFAULT_FETCH_POOL_KEY
+) => {
+  fetchPools.get(poolKey || DEFAULT_FETCH_POOL_KEY)?.update(interval, limit);
 };
 
 /**
  * 清空全局请求池中的所有任务
  */
 export const clearFetchPool = () => {
-  fetchPool?.clear();
+  for (const fetchPool of fetchPools.values()) {
+    fetchPool.clear();
+  }
 };

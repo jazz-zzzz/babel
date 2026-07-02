@@ -4,6 +4,8 @@ import {
   DEFAULT_BATCH_LENGTH,
 } from "../config";
 
+const DEFAULT_MAX_CONCURRENT_BATCHES = 3;
+
 /**
  * 批处理队列工厂函数
  * 支持生成器模式：当 taskFn 是一个异步生成器时，它会 yield {id, result} 逐个异步返回结果；
@@ -14,6 +16,7 @@ import {
  * @param {number} [options.batchInterval] - 触发批处理的最大延迟等待时间（毫秒）
  * @param {number} [options.batchSize] - 触发批处理的最大任务条数上限
  * @param {number} [options.batchLength] - 整个批次中所有文本内容的最大字符长度上限，防止超长报错
+ * @param {number} [options.maxConcurrentBatches] - 同一队列允许同时执行的最大批次数
  * @returns {object} 返回具有 addTask 和 destroy 方法的实例对象
  */
 const BatchQueue = (
@@ -22,11 +25,13 @@ const BatchQueue = (
     batchInterval = DEFAULT_BATCH_INTERVAL,
     batchSize = DEFAULT_BATCH_SIZE,
     batchLength = DEFAULT_BATCH_LENGTH,
+    maxConcurrentBatches = DEFAULT_MAX_CONCURRENT_BATCHES,
   } = {}
 ) => {
   const queue = []; // 存储待处理翻译任务的队列
-  let isProcessing = false; // 当前队列是否正在处理中
+  let activeBatches = 0; // 当前队列正在处理的批次数
   let timer = null; // 用于延迟处理任务的定时器
+  let sequence = 0; // 相同优先级下维持 FIFO 顺序
 
   /**
    * 处理当前队列中的任务
@@ -41,16 +46,20 @@ const BatchQueue = (
       timer = null;
     }
 
-    // 如果队列为空或已经在处理中，则直接返回
-    if (queue.length === 0 || isProcessing) {
+    // 如果队列为空或并行批次数已达上限，则直接返回
+    if (queue.length === 0 || activeBatches >= maxConcurrentBatches) {
       return;
     }
 
-    isProcessing = true;
+    activeBatches++;
 
     let tasksToProcess = [];
     let currentBatchLength = 0;
     let endIndex = 0;
+
+    queue.sort(
+      (a, b) => (b.priority || 0) - (a.priority || 0) || a.sequence - b.sequence
+    );
 
     // 贪心策略：根据 batchSize 和字符长度 batchLength 计算本批次可以打包执行的任务范围
     for (const task of queue) {
@@ -71,7 +80,7 @@ const BatchQueue = (
     }
 
     if (tasksToProcess.length === 0) {
-      isProcessing = false;
+      activeBatches--;
       return;
     }
 
@@ -150,10 +159,10 @@ const BatchQueue = (
         }
       });
     } finally {
-      isProcessing = false;
+      activeBatches--;
       // 如果队列中还有残留任务，判断是否立即继续处理还是延迟等待
       if (queue.length > 0) {
-        if (queue.length >= batchSize) {
+        if (queue.length >= batchSize || activeBatches > 0) {
           setTimeout(processQueue, 0); // 达到批尺寸，立即起新的事件循环继续处理
         } else {
           scheduleProcessing(); // 未达批尺寸，安排延迟防抖执行
@@ -166,7 +175,7 @@ const BatchQueue = (
    * 安排下一次队列的延迟防抖执行
    */
   const scheduleProcessing = () => {
-    if (!isProcessing && !timer && queue.length > 0) {
+    if (activeBatches < maxConcurrentBatches && !timer && queue.length > 0) {
       timer = setTimeout(processQueue, batchInterval);
     }
   };
@@ -180,10 +189,17 @@ const BatchQueue = (
   const addTask = (data, args) => {
     return new Promise((resolve, reject) => {
       const payload = data;
-      queue.push({ payload, resolve, reject, args });
+      queue.push({
+        payload,
+        resolve,
+        reject,
+        args,
+        priority: Number(args?.priority) || 0,
+        sequence: sequence++,
+      });
 
       // 如果当前积压的任务量已达批处理阈值，则立即开始处理
-      if (queue.length >= batchSize) {
+      if (queue.length >= batchSize || activeBatches > 0) {
         processQueue();
       } else {
         scheduleProcessing();
@@ -239,4 +255,5 @@ export const clearAllBatchQueue = () => {
   for (const queue of queueMap.values()) {
     queue.destroy();
   }
+  queueMap.clear();
 };

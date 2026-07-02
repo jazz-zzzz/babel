@@ -149,7 +149,7 @@ export const fnPolyfill = ({ fn, msg = MSG_FETCH, ...args }) => {
 export const fetchData = async (
   input,
   init,
-  { useCache, usePool, fetchInterval, fetchLimit, ...opts } = {}
+  { useCache, usePool, fetchInterval, fetchLimit, poolKey, ...opts } = {}
 ) => {
   if (!input?.trim()) {
     throw new Error("URL is empty");
@@ -165,7 +165,7 @@ export const fetchData = async (
 
   // 2. 通过并发任务池发送请求（用于防范高频请求被封禁、控制 QPS 等）
   if (usePool) {
-    const fetchPool = getFetchPool(fetchInterval, fetchLimit);
+    const fetchPool = getFetchPool(fetchInterval, fetchLimit, poolKey);
     return fetchPool.push(fnPolyfill, { fn: fetchHandle, input, init, opts });
   }
 
@@ -358,7 +358,7 @@ async function* fnPolyfillStream(input, init, opts) {
 export async function* fetchStream(
   input,
   init,
-  { useCache, usePool, fetchInterval, fetchLimit, ...opts } = {}
+  { useCache, usePool, fetchInterval, fetchLimit, poolKey, ...opts } = {}
 ) {
   if (!input?.trim()) {
     throw new Error("URL is empty");
@@ -375,7 +375,7 @@ export async function* fetchStream(
 
   // 2. 通过并发池机制流式传输（异步等待并发信号后在队列中产出）
   if (usePool) {
-    const fetchPool = getFetchPool(fetchInterval, fetchLimit);
+    const fetchPool = getFetchPool(fetchInterval, fetchLimit, poolKey);
     const asyncQueue = createAsyncQueue();
 
     // 在任务池里异步执行，并将流式传输灌入 asyncQueue
