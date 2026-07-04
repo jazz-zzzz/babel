@@ -273,6 +273,8 @@ describe("subtitle batch API prompt settings", () => {
         useStream: true,
         contextChatHistory: true,
         useContext: true,
+        thinkingMode: "enabled",
+        thinkingEffort: "max",
       },
       isAI: true,
       texts: ["one", "two"],
@@ -283,6 +285,8 @@ describe("subtitle batch API prompt settings", () => {
     expect(setting.contextChatHistory).toBe(false);
     expect(setting.useContext).toBe(false);
     expect(setting.useStream).toBe(false);
+    expect(setting.thinkingMode).toBe("disabled");
+    expect(setting.thinkingEffort).toBe("_default");
   });
 
   test("strict chunk prompt hard-separates readonly context from translatable segments", () => {

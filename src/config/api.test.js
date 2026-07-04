@@ -88,10 +88,53 @@ describe("DeepSeek speed defaults", () => {
     expect(deepSeek).toMatchObject({
       useStream: false,
       streamRenderMode: "disabled",
-      thinkingMode: "auto",
+      thinkingMode: "disabled",
+      thinkingEffort: "_default",
       batchInterval: 250,
       fetchInterval: 80,
       rootMargin: 1200,
+    });
+  });
+
+  test("forces thinking disabled for stored runtime translation APIs", () => {
+    const {
+      DEFAULT_API_LIST,
+      normalizeTransApisForRuntime,
+      OPT_TRANS_DEEPSEEK,
+      OPT_TRANS_OPENAI,
+    } = require("./api");
+
+    const storedApis = DEFAULT_API_LIST.map((api) => {
+      if (api.apiType === OPT_TRANS_DEEPSEEK) {
+        return {
+          ...api,
+          thinkingMode: "enabled",
+          thinkingEffort: "max",
+        };
+      }
+      if (api.apiType === OPT_TRANS_OPENAI) {
+        return {
+          ...api,
+          thinkingMode: "auto",
+          thinkingEffort: "high",
+        };
+      }
+      return api;
+    });
+
+    const normalized = normalizeTransApisForRuntime(storedApis);
+
+    expect(
+      normalized.find((api) => api.apiType === OPT_TRANS_DEEPSEEK)
+    ).toMatchObject({
+      thinkingMode: "disabled",
+      thinkingEffort: "_default",
+    });
+    expect(
+      normalized.find((api) => api.apiType === OPT_TRANS_OPENAI)
+    ).toMatchObject({
+      thinkingMode: "disabled",
+      thinkingEffort: "_default",
     });
   });
 });

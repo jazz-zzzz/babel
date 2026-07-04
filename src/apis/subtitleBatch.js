@@ -292,6 +292,8 @@ export const createBatchSubtitleApiSetting = ({
     contextChatHistory: false,
     useContext: false,
     contextSize: 0,
+    thinkingMode: "disabled",
+    thinkingEffort: "_default",
     maxTokens: strict
       ? Math.max(2048, count * 80)
       : Math.max(apiSetting.maxTokens ?? 0, 32768),

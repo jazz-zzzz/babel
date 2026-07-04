@@ -714,7 +714,7 @@ const defaultApi = {
   useContext: false, // [已废弃] 保留兼容，优先使用 contextChatHistory
   temperature: 0.0,
   maxTokens: 20480,
-  thinkingMode: "auto", // 思考模式：auto | enabled | disabled
+  thinkingMode: "disabled", // 思考模式：auto | enabled | disabled
   thinkingEffort: "_default", // 思考强度：_default=接口默认,不注入参数
   isDisabled: false, // 是否不显示,
   region: "", // Azure 专用
@@ -875,10 +875,15 @@ export const DEFAULT_API_SETTING = DEFAULT_API_LIST.find(
   (a) => a.apiType === DEFAULT_API_TYPE
 );
 
+const THINKING_DISABLED_RUNTIME_DEFAULTS = {
+  thinkingMode: "disabled",
+  thinkingEffort: "_default",
+};
+
 const DEEPSEEK_FAST_SPEED_DEFAULTS = {
   useStream: true,
   streamRenderMode: "segment",
-  thinkingMode: "disabled",
+  ...THINKING_DISABLED_RUNTIME_DEFAULTS,
   batchInterval: 50,
   fetchLimit: 30,
   fetchInterval: 10,
@@ -903,12 +908,18 @@ const usesLegacyDeepSeekSpeedDefaults = (api) =>
 export const normalizeTransApisForRuntime = (transApis) => {
   if (!Array.isArray(transApis)) return transApis;
 
-  return transApis.map((api) =>
-    usesLegacyDeepSeekSpeedDefaults(api)
+  return transApis.map((api) => {
+    if (!api || typeof api !== "object") return api;
+    const normalized = usesLegacyDeepSeekSpeedDefaults(api)
       ? {
           ...api,
           ...DEEPSEEK_FAST_SPEED_DEFAULTS,
         }
-      : api
-  );
+      : api;
+
+    return {
+      ...normalized,
+      ...THINKING_DISABLED_RUNTIME_DEFAULTS,
+    };
+  });
 };

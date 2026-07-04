@@ -4,7 +4,7 @@ import {
   DEFAULT_BATCH_LENGTH,
 } from "../config";
 
-const DEFAULT_MAX_CONCURRENT_BATCHES = 3;
+const DEFAULT_MAX_CONCURRENT_BATCHES = 10;
 
 /**
  * 批处理队列工厂函数
