@@ -242,7 +242,7 @@ function ApiFields({ apiSlug, isUserApi, deleteApi, copyApi, onCollapse }) {
     region = "",
     sortOrder = 0,
     aiTerms = "",
-    thinkingMode = "disabled",
+    thinkingMode = "auto",
     thinkingEffort = "_default",
   } = formData;
 

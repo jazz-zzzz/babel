@@ -273,8 +273,6 @@ describe("subtitle batch API prompt settings", () => {
         useStream: true,
         contextChatHistory: true,
         useContext: true,
-        thinkingMode: "enabled",
-        thinkingEffort: "max",
       },
       isAI: true,
       texts: ["one", "two"],
@@ -285,8 +283,40 @@ describe("subtitle batch API prompt settings", () => {
     expect(setting.contextChatHistory).toBe(false);
     expect(setting.useContext).toBe(false);
     expect(setting.useStream).toBe(false);
-    expect(setting.thinkingMode).toBe("disabled");
-    expect(setting.thinkingEffort).toBe("_default");
+  });
+
+  test("forces thinking disabled only for DeepSeek subtitle batches", () => {
+    const deepSeekSetting = createBatchSubtitleApiSetting({
+      apiSetting: {
+        apiType: "DeepSeek",
+        systemPrompt: "old",
+        httpTimeout: 1000,
+        thinkingMode: "enabled",
+        thinkingEffort: "max",
+      },
+      isAI: true,
+      texts: ["one", "two"],
+      toLang: "zh-CN",
+      defaultHttpTimeout: 1000,
+    });
+    const openAISetting = createBatchSubtitleApiSetting({
+      apiSetting: {
+        apiType: "OpenAI",
+        systemPrompt: "old",
+        httpTimeout: 1000,
+        thinkingMode: "enabled",
+        thinkingEffort: "max",
+      },
+      isAI: true,
+      texts: ["one", "two"],
+      toLang: "zh-CN",
+      defaultHttpTimeout: 1000,
+    });
+
+    expect(deepSeekSetting.thinkingMode).toBe("disabled");
+    expect(deepSeekSetting.thinkingEffort).toBe("_default");
+    expect(openAISetting.thinkingMode).toBe("enabled");
+    expect(openAISetting.thinkingEffort).toBe("max");
   });
 
   test("strict chunk prompt hard-separates readonly context from translatable segments", () => {

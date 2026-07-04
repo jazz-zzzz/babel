@@ -96,7 +96,7 @@ describe("DeepSeek speed defaults", () => {
     });
   });
 
-  test("forces thinking disabled for stored runtime translation APIs", () => {
+  test("forces thinking disabled only for stored DeepSeek runtime APIs", () => {
     const {
       DEFAULT_API_LIST,
       normalizeTransApisForRuntime,
@@ -133,8 +133,19 @@ describe("DeepSeek speed defaults", () => {
     expect(
       normalized.find((api) => api.apiType === OPT_TRANS_OPENAI)
     ).toMatchObject({
-      thinkingMode: "disabled",
-      thinkingEffort: "_default",
+      thinkingMode: "auto",
+      thinkingEffort: "high",
     });
+  });
+
+  test("does not ship non-DeepSeek APIs with forced thinking disabled", () => {
+    const { DEFAULT_API_LIST, OPT_TRANS_OPENAI } = require("./api");
+
+    const openAI = DEFAULT_API_LIST.find(
+      (api) => api.apiType === OPT_TRANS_OPENAI
+    );
+
+    expect(openAI.thinkingMode).toBe("auto");
+    expect(openAI.thinkingEffort).toBe("_default");
   });
 });

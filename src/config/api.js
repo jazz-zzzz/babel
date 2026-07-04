@@ -714,7 +714,7 @@ const defaultApi = {
   useContext: false, // [已废弃] 保留兼容，优先使用 contextChatHistory
   temperature: 0.0,
   maxTokens: 20480,
-  thinkingMode: "disabled", // 思考模式：auto | enabled | disabled
+  thinkingMode: "auto", // 思考模式：auto | enabled | disabled
   thinkingEffort: "_default", // 思考强度：_default=接口默认,不注入参数
   isDisabled: false, // 是否不显示,
   region: "", // Azure 专用
@@ -917,9 +917,11 @@ export const normalizeTransApisForRuntime = (transApis) => {
         }
       : api;
 
-    return {
-      ...normalized,
-      ...THINKING_DISABLED_RUNTIME_DEFAULTS,
-    };
+    return normalized.apiType === OPT_TRANS_DEEPSEEK
+      ? {
+          ...normalized,
+          ...THINKING_DISABLED_RUNTIME_DEFAULTS,
+        }
+      : normalized;
   });
 };

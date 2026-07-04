@@ -274,8 +274,14 @@ export const createBatchSubtitleApiSetting = ({
     30000
   );
 
+  const thinkingDefaults =
+    apiSetting.apiType === "DeepSeek"
+      ? { thinkingMode: "disabled", thinkingEffort: "_default" }
+      : {};
+
   return {
     ...apiSetting,
+    ...thinkingDefaults,
     systemPrompt: isAI
       ? strict
         ? buildStrictChunkSubtitleSystemPrompt({ count, toLang })
@@ -292,8 +298,6 @@ export const createBatchSubtitleApiSetting = ({
     contextChatHistory: false,
     useContext: false,
     contextSize: 0,
-    thinkingMode: "disabled",
-    thinkingEffort: "_default",
     maxTokens: strict
       ? Math.max(2048, count * 80)
       : Math.max(apiSetting.maxTokens ?? 0, 32768),
